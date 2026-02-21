@@ -1,14 +1,25 @@
 <?php
-if($SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
+
+if($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    $email = $_POST['email'] ?? '';
     $password = $_POST['password'] ?? '';
 
     if(checkLogin($email,$password)) {
-        header('Location: /students');
+
+        header('Location: /home');
         exit;
-    }else{
-        renderView('login', ['error'=> 'อีเมลหรือรหัสผ่านไม่ถูกต้อง']);
+
+    } else {
+
+        renderView('login', [
+            'error'=> 'อีเมลหรือรหัสผ่านไม่ถูกต้อง'
+        ]);
+        exit;
     }
-}else{
+
+} else {
+
+    // ⭐ ห้าม include ตรง ๆ
     renderView('login');
 }

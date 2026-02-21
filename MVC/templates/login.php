@@ -16,6 +16,16 @@
             <button type="submit">เข้าสู่ระบบ</button>
         </form>
     </main>
+    <p>
+        ยังไม่มีบัญชี <a href="/register" >ลงทะเบียน</a>
+    </p>
+
+    <?php if (!empty($error)): ?>
+        <script>
+            alert("<?= $error ?>");
+        </script>
+    <?php endif; ?>
 
 </body>
+
 </html>

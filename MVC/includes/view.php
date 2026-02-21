@@ -3,7 +3,13 @@
 declare(strict_types=1);
 
 // ฟังก์ชันสำหรับแสดงมุมมอง (view) โดยรับชื่อเทมเพลตและข้อมูลที่ต้องการส่งไปยังเทมเพลต
-function renderView(string $template, array $data = []): void
+// function renderView(string $template, array $data = []): void
+// {
+//     include TEMPLATES_DIR . '/' . $template . '.php';
+// }
+function renderView($view, $data = [])
 {
-    include TEMPLATES_DIR . '/' . $template . '.php';
+    extract($data);   // ⭐⭐ บรรทัดนี้คือคำตอบ
+
+    include __DIR__ . "/../templates/$view.php";
 }
