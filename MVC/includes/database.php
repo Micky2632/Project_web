@@ -14,3 +14,7 @@ function getConnection(): mysqli
 }
 
 require_once DATABASES_DIR . '/users.php';
+require_once DATABASES_DIR . '/registrations.php';
+require_once DATABASES_DIR . '/event.php';
+require_once DATABASES_DIR . '/event_img.php';
+

@@ -38,6 +38,8 @@
 
                 <a href="/register">register</a>
 
+                <a href="/create_event">create_event</a>
+
             </div>
         </div>
     </nav>
