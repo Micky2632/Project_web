@@ -16,12 +16,22 @@ function register() {
     $birth_date   = $_POST['birth_date'] ?? '';
     $phone_number = $_POST['phone_number'] ?? '';
 
-    if ($password !== $confirm) {
-        echo "รหัสผ่านไม่ตรงกัน";
-        return;
+    // ✅ เช็ครหัสผ่านตรงกัน
+     if ($password !== $confirm) {
+        return "password_not_match";
     }
 
-    $password = password_hash($password, PASSWORD_DEFAULT);
+    // ✅ เช็ค email ซ้ำก่อน
+    $check = $conn->prepare("SELECT user_id FROM users WHERE email = ?");
+    $check->bind_param("s", $email);
+    $check->execute();
+
+    if ($check->get_result()->num_rows > 0) {
+       return "duplicate";
+    }
+
+    // ✅ hash password
+    $passwordHash = password_hash($password, PASSWORD_DEFAULT);
     $role = "student";
 
     $sql = "INSERT INTO users
@@ -32,11 +42,18 @@ function register() {
 
     $stmt->bind_param(
         "sssssss",
-        $email, $full_name, $password, $gender,
-        $birth_date, $phone_number, $role
+        $email,
+        $full_name,
+        $passwordHash,
+        $gender,
+        $birth_date,
+        $phone_number,
+        $role
     );
 
-    $stmt->execute();
+    if ($stmt->execute()) {
+        return true;
+    }
 
-    header("Location: /login");
+    return false;
 }

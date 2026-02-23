@@ -9,30 +9,35 @@
 
 <h2>สมัครสมาชิก</h2>
 
-<form action="register" method="post">
+<!-- แสดง error -->
+<?php if(isset($error)): ?>
+    <p style="color:red"><?= $error ?></p>
+<?php endif; ?>
+
+<form action="/register" method="post">
 
     <p>
-        <label>Email :</label><br>
+        Email<br>
         <input type="email" name="email" required>
     </p>
 
     <p>
-        <label>ชื่อ-นามสกุล :</label><br>
+        ชื่อ-นามสกุล<br>
         <input type="text" name="full_name" required>
     </p>
 
     <p>
-        <label>รหัสผ่าน :</label><br>
+        รหัสผ่าน<br>
         <input type="password" name="password" required>
     </p>
 
     <p>
-        <label>ยืนยันรหัสผ่าน :</label><br>
+        ยืนยันรหัสผ่าน<br>
         <input type="password" name="confirm_password" required>
     </p>
 
     <p>
-        <label>เพศ :</label><br>
+        เพศ<br>
         <select name="gender" required>
             <option value="">-- เลือก --</option>
             <option value="male">ชาย</option>
@@ -42,22 +47,17 @@
     </p>
 
     <p>
-        <label>วันเกิด :</label><br>
+        วันเกิด<br>
         <input type="date" name="birth_date" required>
     </p>
 
     <p>
-        <label>เบอร์โทร :</label><br>
+        เบอร์โทร<br>
         <input type="tel" name="phone_number" required>
     </p>
 
-    <!-- ซ่อน role ไว้ (ให้เป็น student อัตโนมัติ) -->
-    <input type="hidden" name="role" value="student">
-
-    <p>
-        <button type="submit">สมัครสมาชิก</button>
-        <button type="reset">ล้างข้อมูล</button>
-    </p>
+    <button type="submit">สมัครสมาชิก</button>
+    <button type="reset">ล้างข้อมูล</button>
 
 </form>
 
