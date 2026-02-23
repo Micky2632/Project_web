@@ -4,13 +4,7 @@
 
 <body>
     <!-- Header และ Footer อาจแยกออกเป็นไฟล์แยกต่างหากได้ -->
-    <header>
-        <h1>WebSite Name</h1>
-    </header>
-    <nav>
-        <a href="/">Home</a>
-        <a href="/login">Login</a>
-    </nav>
+    <?php include 'header.php'?>
     <!-- Header และ Footer อาจแยกออกเป็นไฟล์แยกต่างหากได้ -->
 
     <!-- ส่วนแสดงผลหลักของหน้า -->
