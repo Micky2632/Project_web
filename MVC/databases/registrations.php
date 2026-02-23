@@ -1,59 +1,54 @@
 
 <?php
-function register() {
+function register(): bool|string {
 
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        return;
+        return false;
     }
 
     $conn = getConnection();
 
-    $email        = $_POST['email'] ?? '';
-    $full_name    = $_POST['full_name'] ?? '';
+    $email        = trim($_POST['email'] ?? '');
+    $full_name    = trim($_POST['full_name'] ?? '');
     $password     = $_POST['password'] ?? '';
     $confirm      = $_POST['confirm_password'] ?? '';
     $gender       = $_POST['gender'] ?? '';
     $birth_date   = $_POST['birth_date'] ?? '';
-    $phone_number = $_POST['phone_number'] ?? '';
+    $phone_number = trim($_POST['phone_number'] ?? '');
+
+    // ✅ กัน input ว่าง
+    if ($email === '' || $password === '') {
+        return "invalid";
+    }
 
     // ✅ เช็ครหัสผ่านตรงกัน
-     if ($password !== $confirm) {
+    if ($password !== $confirm) {
         return "password_not_match";
     }
 
-    // ✅ เช็ค email ซ้ำก่อน
-    $check = $conn->prepare("SELECT user_id FROM users WHERE email = ?");
+    // ✅ เช็ค email ซ้ำ
+    $check = $conn->prepare("SELECT 1 FROM users WHERE email = ?");
     $check->bind_param("s", $email);
     $check->execute();
 
     if ($check->get_result()->num_rows > 0) {
-       return "duplicate";
+        return "duplicate";
     }
 
-    // ✅ hash password
     $passwordHash = password_hash($password, PASSWORD_DEFAULT);
     $role = "student";
 
-    $sql = "INSERT INTO users
-            (email, full_name, password, gender, birth_date, phone_number, role, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
-
-    $stmt = $conn->prepare($sql);
+    $stmt = $conn->prepare("
+        INSERT INTO users
+        (email, full_name, password, gender, birth_date, phone_number, role, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+    ");
 
     $stmt->bind_param(
         "sssssss",
-        $email,
-        $full_name,
-        $passwordHash,
-        $gender,
-        $birth_date,
-        $phone_number,
-        $role
+        $email, $full_name, $passwordHash,
+        $gender, $birth_date, $phone_number, $role
     );
 
-    if ($stmt->execute()) {
-        return true;
-    }
-
-    return false;
+    return $stmt->execute();
 }
