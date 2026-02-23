@@ -5,7 +5,7 @@
     <title>Profile</title>
 </head>
 <body>
-
+    
 <main>
 
     <h1><?= $data['title'] ?></h1>
@@ -26,7 +26,7 @@
     <?php
         }
     } else {
-        echo "<p>ไม่พบข้อมูลผู้ใช้</p>";
+        echo "<p>ยังไม่ได้เข้าสู่ระบบ หรือไม่พบข้อมูล</p>";
     }
     ?>
 
