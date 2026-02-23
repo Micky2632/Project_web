@@ -1,40 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Profile</title>
 </head>
 <body>
-    <main >
-    <!-- ===== ข้อมูลผู้ใช้ ===== -->
-    <div>
 
-        <h1>
-            <?= $data['title'] ?>
-        </h1>
+<main>
 
-        <main>
+    <h1><?= $data['title'] ?></h1>
 
-            <?php
-            if ($data['result'] != []) {
-                while ($row = $data['result']->fetch_object()) {
-            ?>
+    <?php
+    if ($data['result'] && $data['result']->num_rows > 0) {
+        while ($row = $data['result']->fetch_object()) {
+    ?>
 
-                <div>
-                    <p>ชื่อ: <?= $row->full_name?></p>
-                    <p>เพศ: <?= $row->gender?></p>
-                    <p>วันเกิด: <?= $row->birth_date?></p>
-                    <p>เบอร์โทร: <?= $row->phone_number?></p>
-                    <p>อีเมล: <?= $row->email?></p>
-                </div>
-
-            <?php
-                }
-            }
-            ?>
-        </main>
+        <div>
+            <p>ชื่อ: <?= $row->full_name ?></p>
+            <p>เพศ: <?= $row->gender ?></p>
+            <p>วันเกิด: <?= $row->birth_date ?></p>
+            <p>เบอร์โทร: <?= $row->phone_number ?></p>
+            <p>อีเมล: <?= $row->email ?></p>
         </div>
-    </div>
+
+    <?php
+        }
+    } else {
+        echo "<p>ไม่พบข้อมูลผู้ใช้</p>";
+    }
+    ?>
+
+</main>
+
 </body>
 </html>
