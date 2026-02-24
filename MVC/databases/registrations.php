@@ -16,17 +16,17 @@ function register(): bool|string {
     $birth_date   = $_POST['birth_date'] ?? '';
     $phone_number = trim($_POST['phone_number'] ?? '');
 
-    // ✅ กัน input ว่าง
+    // กัน input ว่าง
     if ($email === '' || $password === '') {
         return "invalid";
     }
 
-    // ✅ เช็ครหัสผ่านตรงกัน
+    // เช็ครหัสผ่านตรงกัน
     if ($password !== $confirm) {
         return "password_not_match";
     }
 
-    // ✅ เช็ค email ซ้ำ
+    // เช็ค email ซ้ำ
     $check = $conn->prepare("SELECT 1 FROM users WHERE email = ?");
     $check->bind_param("s", $email);
     $check->execute();
