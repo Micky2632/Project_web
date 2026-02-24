@@ -26,7 +26,8 @@ switch (true) {  // ตรวจสอบผลลัพธ์
 
     // ⭐ OTP 6 หลัก
     case preg_match('/^\d{6}$/', $result):  // ถ้าเป็นรหัส 6 ตัว
-        $_SESSION['otp'] = $result;  // บันทึก OTP
+        $_SESSION['otp'] = $result;  // บันทึก OTP สำหรับแสดงผล
+        $_SESSION['otp_expire'] = date('Y-m-d H:i:s', time() + 1800);
         break;  // ออก
 
     default:  // กรณีอื่น

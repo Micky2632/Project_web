@@ -91,7 +91,7 @@
         <div class="bg-black/30 px-3 py-2 rounded-lg flex justify-between">
 
             <span><?= $p->name ?></span>
-            <span class="text-yellow-300">OTP: <?= $p->otp_code ?></span>
+            <span class="text-yellow-300">รอการยืนยัน</span>
 
         </div>
 
@@ -106,7 +106,7 @@
     <?php endif; ?>
 
     <!-- ===================== -->
-    <!-- ⭐ รายชื่อที่ถูกปฏิเสธ -->
+    <!-- รายชื่อที่ถูกปฏิเสธ -->
     <!-- ===================== -->
 
     <?php $rejected = getRejectedUsers($row->event_id); ?>
@@ -122,7 +122,7 @@
             <div class="bg-red-900/30 px-3 py-2 rounded-lg flex justify-between">
 
                 <span><?= $r->name ?></span>
-                <span class="text-red-300">OTP: <?= $r->otp_code ?></span>
+                <span class="text-red-300">ถูกปฏิเสธ</span>
 
             </div>
 

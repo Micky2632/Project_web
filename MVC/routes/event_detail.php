@@ -8,6 +8,8 @@ if (!$event_id) {
 }
 
 $event = getEventDetails($event_id);
+$stats = getEventStats($event_id);
+$ageStats = getEventAgeStats($event_id);
 
 if (!$event) {
     $_SESSION['msg'] = "ไม่พบกิจกรรม";
@@ -15,5 +17,5 @@ if (!$event) {
     exit;
 }
 
-renderView('event_detail', ['event' => $event, 'title' => $event['description']]);
+renderView('event_detail', ['event' => $event, 'stats' => $stats, 'ageStats' => $ageStats, 'title' => $event['description']]);
 exit;

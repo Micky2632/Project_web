@@ -184,7 +184,15 @@
         </div>
 
         <script>
-            let seconds = 1800; // ⭐ 30 นาที = 1800 วินาที
+            // คำนวณเวลาที่เหลือจาก session expire time
+            <?php
+            $remainingSeconds = 1800; // default 30 นาที
+            if (isset($_SESSION['otp_expire'])) {
+                $remainingSeconds = max(0, strtotime($_SESSION['otp_expire']) - time());
+                unset($_SESSION['otp_expire']); // unset otp_expire after use
+            }
+            ?>
+            let seconds = <?= $remainingSeconds ?>;
             const timerEl = document.getElementById("timer");
 
             function formatTime(sec) {

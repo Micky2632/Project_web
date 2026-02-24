@@ -39,6 +39,7 @@ if (strtotime($data['otp_expire']) < time()) {
 }
 
 $_SESSION['otp'] = $data['otp_code'];
+$_SESSION['otp_expire'] = $data['otp_expire'];
 
 header('Location: /home');
 exit;

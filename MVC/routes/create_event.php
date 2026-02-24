@@ -1,6 +1,12 @@
 <?php
 // 2.1 สร้างกิจกรรม - ผู้สร้างกิจกรรมสร้างได้มากกว่า 1 กิจกรรม
 
+// เช็คว่าผู้ใช้ล็อกอินแล้วหรือไม่
+if (!isset($_SESSION['user_id'])) {
+    header('Location: /login');
+    exit;
+}
+
 if($_SERVER['REQUEST_METHOD'] === 'POST'){  // ถ้าส่งฟอร์ม
 
     $ok = createEvent(  // เรียกฟังก์ชันสร้างกิจกรรม

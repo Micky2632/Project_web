@@ -93,6 +93,52 @@
                     </div>
                 </div>
 
+                <!-- สถิติการเข้าร่วม -->
+                <div class="border-t border-white/20 pt-4">
+                    <p class="text-sm text-gray-300 mb-3">สถิติการเข้าร่วม</p>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="bg-green-500/20 rounded-xl p-3 text-center">
+                            <p class="text-2xl font-bold text-green-300"><?= $data['stats']['confirmed_count'] ?></p>
+                            <p class="text-xs text-green-200">ยืนยันแล้ว</p>
+                        </div>
+                        <div class="bg-yellow-500/20 rounded-xl p-3 text-center">
+                            <p class="text-2xl font-bold text-yellow-300"><?= $data['stats']['pending_count'] ?></p>
+                            <p class="text-xs text-yellow-200">รอการยืนยัน</p>
+                        </div>
+                        <div class="bg-red-500/20 rounded-xl p-3 text-center">
+                            <p class="text-2xl font-bold text-red-300"><?= $data['stats']['rejected_count'] ?></p>
+                            <p class="text-xs text-red-200">ถูกปฏิเสธ</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- สถิติช่วงอายุ -->
+                <div class="border-t border-white/20 pt-4">
+                    <p class="text-sm text-gray-300 mb-3">สถิติช่วงอายุ (ผู้ยืนยันแล้ว)</p>
+                    <div class="grid grid-cols-5 gap-2">
+                        <div class="bg-purple-500/20 rounded-lg p-2 text-center">
+                            <p class="text-xl font-bold text-purple-300"><?= $data['ageStats']['under_18'] ?></p>
+                            <p class="text-xs text-purple-200">< 18</p>
+                        </div>
+                        <div class="bg-blue-500/20 rounded-lg p-2 text-center">
+                            <p class="text-xl font-bold text-blue-300"><?= $data['ageStats']['18_25'] ?></p>
+                            <p class="text-xs text-blue-200">18-25</p>
+                        </div>
+                        <div class="bg-indigo-500/20 rounded-lg p-2 text-center">
+                            <p class="text-xl font-bold text-indigo-300"><?= $data['ageStats']['26_35'] ?></p>
+                            <p class="text-xs text-indigo-200">26-35</p>
+                        </div>
+                        <div class="bg-pink-500/20 rounded-lg p-2 text-center">
+                            <p class="text-xl font-bold text-pink-300"><?= $data['ageStats']['36_50'] ?></p>
+                            <p class="text-xs text-pink-200">36-50</p>
+                        </div>
+                        <div class="bg-orange-500/20 rounded-lg p-2 text-center">
+                            <p class="text-xl font-bold text-orange-300"><?= $data['ageStats']['over_50'] ?></p>
+                            <p class="text-xs text-orange-200">50+</p>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
         </div>
