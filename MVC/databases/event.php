@@ -85,44 +85,31 @@ function joinEvent(int $event_id, int $user_id): bool|string
     if ($event['status'] !== 'open') return "closed";
     if ($event['joined'] >= $event['max_people']) return "full";
 
-    // กันซ้ำ - เช็คจาก database
+    // กันซ้ำ - เช็คจาก database (เฉพาะ confirmed)
     $check = $conn->prepare("
         SELECT status FROM registrations
-        WHERE event_id=? AND user_id=?
+        WHERE event_id=? AND user_id=? AND status='confirmed'
     ");
     $check->bind_param("ii", $event_id, $user_id);
     $check->execute();
     $row = $check->get_result()->fetch_assoc();
 
-    if ($row) {
-        // ถ้าเป็น confirmed ห้ามสมัครซ้ำ
-        if ($row['status'] === 'confirmed') {
-            return "duplicate";
-        }
-        // ถ้าเป็น pending แต่ยังไม่หมดอายุใน session → คืน OTP เดิม
-        if (isset($_SESSION['_otp_data'][$event_id][$user_id]) && $_SESSION['_otp_data'][$event_id][$user_id]['expire'] > time()) {
-            return $_SESSION['_otp_data'][$event_id][$user_id]['code'];
-        }
-        // ถ้าหมดอายุแล้ว ลบอันเก่าออก
-        $del = $conn->prepare("DELETE FROM registrations WHERE event_id=? AND user_id=?");
-        $del->bind_param("ii", $event_id, $user_id);
-        $del->execute();
+    if ($row && $row['status'] === 'confirmed') {
+        return "duplicate";
     }
 
-    // OTP 6 หลัก
-    $otp = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
-    $expire = date('Y-m-d H:i:s', time() + 1800); // 30 นาที
+    // ลบ pending เก่าถ้ามี (สร้างใหม่ทุกครั้ง)
+    $del = $conn->prepare("DELETE FROM registrations WHERE event_id=? AND user_id=? AND status='pending'");
+    $del->bind_param("ii", $event_id, $user_id);
+    $del->execute();
 
-    // เก็บใน session ด้วย (สำหรับผู้เข้าร่วมดู)
-    $_SESSION['_otp_data'][$event_id][$user_id] = [
-        'code' => $otp,
-        'expire' => time() + 1800
-    ];
+    // Generate TOTP จาก algorithm (ไม่ต้องเก็บใน database)
+    $otp = generateEventOTP($event_id, $user_id);
 
-    // insert pending พร้อมเก็บ otp_code และ otp_expire ใน database
+    // insert pending โดยไม่เก็บ otp_code และ otp_expire (ใช้ algorithm ตรวจสอบแทน)
     $stmt = $conn->prepare("
-        INSERT INTO registrations (event_id, user_id, status, otp_code, otp_expire)
-        VALUES (?, ?, 'pending', ?, ?)
+        INSERT INTO registrations (event_id, user_id, status)
+        VALUES (?, ?, 'pending')
     ");
 
     if (!$stmt) {
@@ -130,11 +117,11 @@ function joinEvent(int $event_id, int $user_id): bool|string
         return false;
     }
 
-    $stmt->bind_param("iiss", $event_id, $user_id, $otp, $expire);
+    $stmt->bind_param("ii", $event_id, $user_id);
 
     if ($stmt->execute()) {
-        error_log("joinEvent INSERT success: event=$event_id, user=$user_id, otp=$otp");
-        return $otp; // ส่ง OTP กลับ
+        error_log("joinEvent INSERT success: event=$event_id, user=$user_id, TOTP generated");
+        return $otp; // ส่ง TOTP กลับ
     } else {
         error_log("joinEvent INSERT failed: " . $stmt->error);
         return false;
@@ -277,70 +264,49 @@ function getRejectedUsers(int $event_id): mysqli_result|bool
 
 
 /* =========================
-   ตรวจ OTP - ค้นหาจาก database
+   ตรวจ OTP - ใช้ TOTP Algorithm (ไม่ต้องเก็บใน database)
 ========================= */
 function verifyOTP(int $event_id, string $otp): bool
 {
     $conn = getConnection();
     
     // DEBUG: บันทึกค่าที่รับมา
-    error_log("verifyOTP: event_id=$event_id, otp=$otp");
+    error_log("verifyOTP TOTP: event_id=$event_id, otp=$otp");
     
-    // ค้นหา user จาก OTP ใน database (ชั่วคราวลบเงื่อนไข otp_expire > NOW() ออก)
+    // หา pending users ทั้งหมดใน event นี้
     $stmt = $conn->prepare("
-        SELECT user_id, otp_code, otp_expire, status FROM registrations
-        WHERE event_id = ? AND otp_code = ? AND status = 'pending'
+        SELECT user_id FROM registrations
+        WHERE event_id = ? AND status = 'pending'
     ");
-    $stmt->bind_param("is", $event_id, $otp);
+    $stmt->bind_param("i", $event_id);
     $stmt->execute();
     $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
     
-    // DEBUG: บันทึกผลการค้นหา
-    if (!$row) {
-        error_log("verifyOTP: No matching row found");
+    // ตรวจสอบ OTP กับทุก user ที่ pending
+    while ($row = $result->fetch_assoc()) {
+        $user_id = $row['user_id'];
         
-        // ลองค้นหาแบบไม่มีเงื่อนไข otp_expire เพื่อ debug
-        $debugStmt = $conn->prepare("
-            SELECT user_id, otp_code, otp_expire, status FROM registrations
-            WHERE event_id = ? AND otp_code = ?
-        ");
-        $debugStmt->bind_param("is", $event_id, $otp);
-        $debugStmt->execute();
-        $debugResult = $debugStmt->get_result();
-        $debugRow = $debugResult->fetch_assoc();
-        if ($debugRow) {
-            error_log("verifyOTP DEBUG: Found row without time check: " . json_encode($debugRow));
-            error_log("verifyOTP DEBUG: NOW() = " . date('Y-m-d H:i:s'));
-        } else {
-            error_log("verifyOTP DEBUG: No row found even without time check");
+        // ใช้ TOTP algorithm ตรวจสอบ (ไม่ต้อง query database)
+        if (verifyEventOTP($event_id, $user_id, $otp)) {
+            error_log("verifyOTP TOTP: Valid OTP found for user_id=$user_id");
+            
+            // OTP ถูกต้อง → อัพเดท status เป็น confirmed
+            $update = $conn->prepare("
+                UPDATE registrations
+                SET status='confirmed'
+                WHERE event_id=? 
+                  AND user_id=?
+                  AND status='pending'
+            ");
+            $update->bind_param("ii", $event_id, $user_id);
+            
+            if ($update->execute() && $update->affected_rows > 0) {
+                return true;
+            }
         }
-        
-        return false;
     }
     
-    error_log("verifyOTP: Found row: " . json_encode($row));
-    
-    $user_id = $row['user_id'];
-
-    // OTP ถูกต้อง → อัพเดท status เป็น confirmed พร้อมลบ otp
-    $sql = "
-        UPDATE registrations
-        SET status='confirmed', otp_code=NULL, otp_expire=NULL
-        WHERE event_id=? 
-          AND user_id=?
-          AND status='pending'
-    ";
-
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ii", $event_id, $user_id);
-
-    if ($stmt->execute() && $stmt->affected_rows > 0) {
-        // ลบจาก session ด้วยถามี
-        unset($_SESSION['_otp_data'][$event_id][$user_id]);
-        return true;
-    }
-
+    error_log("verifyOTP TOTP: No valid OTP found");
     return false;
 }
 
@@ -382,32 +348,32 @@ function getAllEventsWithStatus(int $user_id): mysqli_result|bool
 
 function getMyOTP(int $event_id, int $user_id): ?array
 {
-    // ดึง OTP จาก database แทน session
+    // ตรวจสอบว่า user เป็น pending ใน event นี้หรือไม่
     $conn = getConnection();
     $stmt = $conn->prepare("
-        SELECT otp_code, otp_expire FROM registrations
-        WHERE event_id = ? AND user_id = ?
+        SELECT status FROM registrations
+        WHERE event_id = ? AND user_id = ? AND status = 'pending'
     ");
     $stmt->bind_param("ii", $event_id, $user_id);
     $stmt->execute();
     $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
     
-    if (!$row) {
-        return null;
+    if (!$result->fetch_assoc()) {
+        return null; // ไม่พบ pending registration
     }
     
-    $otpData = [
-        'otp_code' => $row['otp_code'],
-        'otp_expire' => $row['otp_expire']
+    // Generate TOTP จาก algorithm (ไม่ต้อง query database)
+    $otp = generateEventOTP($event_id, $user_id);
+    $remaining = getTOTPRemainingSeconds();
+    
+    // คำนวณ expire time
+    $expire = date('Y-m-d H:i:s', time() + $remaining);
+    
+    return [
+        'otp_code' => $otp,
+        'otp_expire' => $expire,
+        'remaining_seconds' => $remaining
     ];
-
-    // เช็คว่าหมดอายุหรือยัง
-    if (strtotime($otpData['otp_expire']) < time()) {
-        return null;
-    }
-
-    return $otpData;
 }
 
 /* =========================
@@ -595,43 +561,42 @@ function deleteEvent(int $event_id): bool
 }
 
 /* =========================
-   ปฏิเสธการลงทะเบียน - ค้นหาจาก database
+   ปฏิเสธการลงทะเบียน - ใช้ TOTP Algorithm (ไม่ต้องเก็บใน database)
 ========================= */
 function rejectRegistration(int $event_id, string $otp): bool
 {
     $conn = getConnection();
     
-    // ค้นหา user จาก OTP ใน database
+    // หา pending users ทั้งหมดใน event นี้
     $stmt = $conn->prepare("
         SELECT user_id FROM registrations
-        WHERE event_id = ? AND otp_code = ? AND status = 'pending'
-          AND otp_expire > NOW()
+        WHERE event_id = ? AND status = 'pending'
     ");
-    $stmt->bind_param("is", $event_id, $otp);
+    $stmt->bind_param("i", $event_id);
     $stmt->execute();
     $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
     
-    if (!$row) {
-        return false; // ไม่พบ OTP
-    }
-    
-    $user_id = $row['user_id'];
+    // ตรวจสอบ OTP กับทุก user ที่ pending
+    while ($row = $result->fetch_assoc()) {
+        $user_id = $row['user_id'];
+        
+        // ใช้ TOTP algorithm ตรวจสอบ
+        if (verifyEventOTP($event_id, $user_id, $otp)) {
+            // OTP ถูกต้อง → อัพเดท status เป็น rejected
+            $update = $conn->prepare("
+                UPDATE registrations
+                SET status = 'rejected'
+                WHERE event_id = ? 
+                  AND user_id = ?
+                  AND status = 'pending'
+            ");
+            $update->bind_param("ii", $event_id, $user_id);
+            $update->execute();
 
-    $stmt = $conn->prepare("
-        UPDATE registrations
-        SET status = 'rejected', otp_code=NULL, otp_expire=NULL
-        WHERE event_id = ? 
-          AND user_id = ?
-          AND status = 'pending'
-    ");
-    $stmt->bind_param("ii", $event_id, $user_id);
-    $stmt->execute();
-
-    if ($stmt->affected_rows > 0) {
-        // ลบจาก session ด้วยถามี
-        unset($_SESSION['_otp_data'][$event_id][$user_id]);
-        return true;
+            if ($update->affected_rows > 0) {
+                return true;
+            }
+        }
     }
 
     return false;

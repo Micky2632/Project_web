@@ -1,5 +1,10 @@
 <?php
 declare(strict_types=1);
+
+// Load configuration and TOTP functions
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/totp.php';
+
 function getConnection(): mysqli
 {
     $hostname = 'localhost';
